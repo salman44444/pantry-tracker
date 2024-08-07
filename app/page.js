@@ -109,10 +109,9 @@ export default function Home() {
       .map((item) => `${item.name}: ${item.quantity}`)
       .join(", ");
 
-    fetch("https://openrouter.ai/api/v1/chat/completions", {
+    fetch("/api/proxy", {
       method: "POST",
       headers: {
-        Authorization: `Bearer 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`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -132,13 +131,17 @@ export default function Home() {
         return response.json();
       })
       .then((data) => {
-        setRecipies(data.choices[0].message.content.replace(/\*\*/g, ""));
-
-        setLoading(false); // Set loading to false
+        console.log("API response data:", data);
+        if (data.choices && data.choices[0]) {
+          setRecipies(data.choices[0].message.content.replace(/\*\*/g, ""));
+        } else {
+          console.error("Unexpected API response structure:", data);
+        }
+        setLoading(false);
       })
       .catch((error) => {
         console.error("There was a problem with the fetch operation:", error);
-        setLoading(false); // Set loading to false
+        setLoading(false);
       });
   };
 
@@ -190,7 +193,7 @@ export default function Home() {
           </Box>
         )}
 
-        {!loading && recipies !== "" && value !==1 &&  (
+        {!loading && recipies !== "" && value !== 1 && (
           <Box sx={{ margin: 5 }}>
             <Typography variant="h6" gutterBottom>
               Recipes:
