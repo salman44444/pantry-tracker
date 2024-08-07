@@ -1,4 +1,4 @@
-import { firestore, storage } from "@/firebase";
+import { firestore as db, storage } from "@/firebase";
 import {
   addDoc,
   collection,
@@ -34,33 +34,6 @@ const categories = [
   "General",
 ];
 
-const sendpictoai = () => {
-  const key =
-    "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";
-
-  client = OpenAI()
-
-  response = client.chat.completions.create(
-    (model = "gpt-4o-mini"),
-    (messages = [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: "What’s in this image?" },
-          {
-            type: "image_url",
-            image_url: {
-              url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
-            },
-          },
-        ],
-      },
-    ]),
-    (max_tokens = 300)
-  );
-
-  print(response.choices[0]);
-};
 const AddForm = ({ initialData = {}, onClose }) => {
   console.log("Initial Data:", initialData); // Logging initialData
 
@@ -94,7 +67,7 @@ const AddForm = ({ initialData = {}, onClose }) => {
         pictureURL: downloadUrl,
       };
       if (initialData?.id) {
-        const itemDocRef = doc(firestore, "pantryItems", initialData.id);
+        const itemDocRef = doc(db, "pantryItems", initialData.id);
         const itemDocSnapshot = await getDoc(itemDocRef);
 
         if (itemDocSnapshot.exists()) {
@@ -104,7 +77,8 @@ const AddForm = ({ initialData = {}, onClose }) => {
           await setDoc(itemDocRef, itemData);
         }
       } else {
-        await addDoc(collection(firestore, "pantryItems"), itemData);
+        const newitemDocRef = doc(db, "pantryItems", itemData.id);
+        await setDoc(newitemDocRef, itemData);
       }
 
       console.log("Form submitted successfully!");

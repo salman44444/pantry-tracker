@@ -23,7 +23,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 
-import { collection, deleteDoc, doc, getDocs, query } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, query } from "firebase/firestore";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Refresh } from "@mui/icons-material";
@@ -79,53 +79,77 @@ const PantryTable = ({ editmode, Refresh }) => {
     setEditItem(null);
   };
   const updateInventory = async () => {
-    const snapshot = query(collection(firestore, "pantryItems"));
-    const docs = await getDocs(snapshot);
-    const inventoryList = docs.docs.map((doc) => doc.data());
-    setinventory(inventoryList);
-  };
-  const deleteItem = async (item) => {
     try {
-      const itemDoc = doc(firestore, "pantryItems", item.id);
-      await deleteDoc(itemDoc);
-      updateInventory();
-      console.log("Item deleted successfully!");
+      const snapshot = query(collection(firestore, "pantryItems"));
+      const docs = await getDocs(snapshot);
+      const inventoryList = docs.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      console.log("Updated inventory:", inventoryList);
+      setinventory(inventoryList);
     } catch (error) {
-      console.error("Error deleting item: ", error);
+      console.error("Error fetching inventory: ", error);
     }
   };
+  
+
+const deleteItem = async (item) => {
+  try {
+    console.log("Attempting to delete item with ID:", item.id); // Log the ID
+    const itemDoc = doc(firestore, "pantryItems", item.id);
+    console.log("Document path:", itemDoc.path); // Log the document path
+
+    // Check if document exists
+    const docSnapshot = await getDoc(itemDoc);
+    if (docSnapshot.exists()) {
+      console.log("Document data before deletion:", docSnapshot.data());
+      await deleteDoc(itemDoc);
+      console.log("Item deleted successfully!");
+    } else {
+      console.log("Document does not exist!");
+    }
+
+    await updateInventory(); // Ensure this is awaited
+  } catch (error) {
+    console.error("Error deleting item: ", error);
+  }
+};
+  
+  
   useEffect(() => {
     updateInventory();
   }, [Refresh]);
 
   return (
     <Stack>
-     {editmode==0 && <Box display="flex" justifyContent="space-between" mb={2}>
-        <TextField
-          label="Search"
-          variant="outlined"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <FormControl variant="outlined">
-          <InputLabel>Category</InputLabel>
-          <Select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            label="Category"
-          >
-            <MenuItem value="">
-              <em>All</em>
-            </MenuItem>
-            {categories.map((category) => (
-              <MenuItem key={category} value={category}>
-                {category}
+      {editmode == 0 && (
+        <Box display="flex" justifyContent="space-between" mb={2}>
+          <TextField
+            label="Search"
+            variant="outlined"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <FormControl variant="outlined">
+            <InputLabel>Category</InputLabel>
+            <Select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              label="Category"
+            >
+              <MenuItem value="">
+                <em>All</em>
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-}
+              {categories.map((category) => (
+                <MenuItem key={category} value={category}>
+                  {category}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      )}
       <Box marginTop={5}>
         <TableContainer component={Paper}>
           <Table sx={{ minWidth: 650 }} aria-label="simple Table">
